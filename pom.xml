@@ -21,6 +21,9 @@
 	</licenses>
 
 	<properties>
+		<maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
+		<deploymentFolder>auto-pivot-deployment-v${project.version}-${maven.build.timestamp}</deploymentFolder>
+
 		<activepivot.version>5.6.1</activepivot.version>
 		<activeui.version>4.1.11</activeui.version>
 		<jetty.version>9.4.8.v20171121</jetty.version>
@@ -145,6 +148,63 @@
 				<artifactId>maven-war-plugin</artifactId>
 				<version>3.0.0</version>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<failOnMissingWebXml>false</failOnMissingWebXml>
+					<outputDirectory>${basedir}/${deploymentFolder}/pivot/webapps</outputDirectory>
+					<warName>autopivot</warName>
+				</configuration>
+			</plugin>
 		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<!-- Delete the deployment directory during the clean phase -->
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>2.6</version>
+					<inherited>false</inherited>
+					<configuration>
+						<filesets>
+							<fileset>
+								<directory>${basedir}</directory>
+								<includes>
+									<include>auto-pivot-deployment*/</include>
+								</includes>
+							</fileset>
+						</filesets>
+					</configuration>
+				</plugin>
+				<plugin>
+					<!-- Copy the configuration into the deployment directory -->
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>2.7</version>
+					<executions>
+						<execution>
+							<id>copy-resources</id>
+							<phase>install</phase>
+							<goals>
+								<goal>copy-resources</goal>
+							</goals>
+							<configuration>
+								<outputDirectory>${basedir}/${deploymentFolder}</outputDirectory>
+								<resources>
+									<resource>
+										<directory>${basedir}/configuration</directory>
+										<filtering>false</filtering>
+										<excludes>
+											<exclude>**/*.md</exclude>
+										</excludes>
+									</resource>
+								</resources>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 </project>

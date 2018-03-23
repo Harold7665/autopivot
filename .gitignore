@@ -1,0 +1,9 @@
+#IntelliJ
+.idea
+*.iml
+
+#Deployments
+*-deployment-v*
+
+#Builds
+target/
