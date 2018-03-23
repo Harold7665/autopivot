@@ -18,6 +18,7 @@
  */
 package com.av.autopivot.spring;
 
+import com.qfs.util.impl.QfsProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,8 @@ import com.qfs.pivot.content.impl.ActivePivotContentServiceBuilder;
 import com.qfs.server.cfg.content.IActivePivotContentServiceConfig;
 import com.qfs.server.cfg.i18n.impl.LocalI18nConfig;
 import com.quartetfs.biz.pivot.definitions.IActivePivotManagerDescription;
+
+import java.util.Properties;
 
 /**
  * Spring configuration of the <b>Content Service</b> backed by a local <b>Content Server</b>.
@@ -47,7 +50,7 @@ public class ContentServiceConfig implements IActivePivotContentServiceConfig {
 
 	/** ActivePivot Manager Configuration */
 	@Autowired
-	protected ActivePivotManagerConfig managerConfig;
+	private ActivePivotManagerConfig managerConfig;
 
 	/**
 	 * @return ActivePivot content service used to store context
@@ -56,17 +59,28 @@ public class ContentServiceConfig implements IActivePivotContentServiceConfig {
 	@Bean
 	@Override
 	public IActivePivotContentService activePivotContentService() {
-
-		IActivePivotManagerDescription manager = managerConfig.managerDescription();
-		
-		return new ActivePivotContentServiceBuilder()
-				.withoutPersistence()
-				.withoutCache()
-				.needInitialization(SecurityConfig.ROLE_USER, SecurityConfig.ROLE_USER)
-				.withDescription(manager)
-				// Push the context values stored in ROLE-INF directory
-				.withContextValues("ROLE-INF")
-				.build();
+		final IActivePivotManagerDescription manager = managerConfig.managerDescription();
+		final Properties autoPivotProperties = QfsProperties.loadProperties("autopivot.properties");
+		final String enableBookmarksPersistence = autoPivotProperties.getProperty("enableBookmarksPersistence");
+		if(enableBookmarksPersistence != null && Boolean.valueOf(enableBookmarksPersistence)) {
+			final Properties hibernateProperties = QfsProperties.loadProperties("hibernate.properties");
+			return new ActivePivotContentServiceBuilder()
+					.withPersistence(new org.hibernate.cfg.Configuration().addProperties(hibernateProperties))
+					.withoutAudit()
+					.withoutCache()
+					.needInitialization(SecurityConfig.ROLE_USER, SecurityConfig.ROLE_USER)
+					.withDescription(manager)
+					.withContextValues("ROLE-INF")
+					.build();
+		} else {
+			return new ActivePivotContentServiceBuilder()
+					.withoutPersistence()
+					.withoutCache()
+					.needInitialization(SecurityConfig.ROLE_USER, SecurityConfig.ROLE_USER)
+					.withDescription(manager)
+					.withContextValues("ROLE-INF")
+					.build();
+		}
 	}
 
 	@Bean
